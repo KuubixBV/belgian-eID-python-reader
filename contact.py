@@ -16,8 +16,8 @@ class eIDContact:
     two_first_given_names = ""
     first_letter_of_third_name = ""
     nationality = ""
-    birth_location = ""
-    birth_date = ""
+    birthplace = ""
+    birthdate = ""
     sex = ""
     noble_condition = ""
     document_type = ""
@@ -52,8 +52,8 @@ class eIDContact:
             # Convert spaces in keys to underscores to match the class attribute names
             attribute_name = key.replace(" ", "_")
 
-            # Check if key is birth_date
-            if attribute_name == "birth_date":
+            # Check if key is birthdate
+            if attribute_name == "birthdate":
                 value = self._birthdate_to_timestamp(value)
 
             # Check if key is date like
@@ -112,8 +112,8 @@ class eIDContact:
             raise ValueError("Invalid month abbreviation in birthdate string")
 
         # Create a datetime object
-        birth_date = datetime.datetime(year, month, day)
-        timestamp = int(time.mktime(birth_date.timetuple()))
+        birthdate = datetime.datetime(year, month, day)
+        timestamp = int(time.mktime(birthdate.timetuple()))
         
         return timestamp
         
@@ -135,8 +135,8 @@ class eIDContact:
             self.two_first_given_names = ""
             self.first_letter_of_third_name = ""
             self.nationality = ""
-            self.birth_location = ""
-            self.birth_date = ""
+            self.birthplace = ""
+            self.birthdate = ""
             self.sex = ""
             self.noble_condition = ""
             self.document_type = ""

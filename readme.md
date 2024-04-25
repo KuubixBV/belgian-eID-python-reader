@@ -81,8 +81,8 @@ eID_contact.name
 eID_contact.two_first_given_names
 eID_contact.first_letter_of_third_name
 eID_contact.nationality
-eID_contact.birth_location
-eID_contact.birth_date # Data is unix timestamp
+eID_contact.birthplace
+eID_contact.birthdate # Data is unix timestamp
 eID_contact.sex # "M" or "F" -> simplified
 eID_contact.noble_condition
 eID_contact.document_type
