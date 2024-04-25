@@ -1,6 +1,7 @@
 import datetime
-import json
 import base64
+import json
+import time
 
 class eIDContact:
 
@@ -51,6 +52,18 @@ class eIDContact:
             # Convert spaces in keys to underscores to match the class attribute names
             attribute_name = key.replace(" ", "_")
 
+            # Check if key is birth_date
+            if attribute_name == "birth_date":
+                value = self._birthdate_to_timestamp(value)
+
+            # Check if key is date like
+            if attribute_name == "card_validity_begin" or attribute_name == "card_validity_end":
+                value = self._date_to_timestamp(value)
+
+            # Check for SEX (why do they store the F versions in 3 languages????)
+            if attribute_name == "sex":
+                value = "M" if value == "M" else "F"
+
             # Check if the attribute exists in the class before setting it
             if hasattr(self, attribute_name):
 
@@ -63,6 +76,47 @@ class eIDContact:
                 raise Exception(f"Attribute '{attribute_name}' does not exist!")
 
         self.updated = datetime.datetime.now().timestamp()
+
+    ## Date convert to timestamp
+    def _date_to_timestamp(self, date_str):
+
+        # Parse the date string
+        day, month, year = map(int, date_str.split('.'))
+        date = datetime.datetime(year, month, day)
+        
+        # Convert the datetime object to a UNIX timestamp
+        timestamp = int(time.mktime(date.timetuple()))
+        
+        return timestamp
+
+    ## BirthDate convert to timestamp
+    def _birthdate_to_timestamp(self, birthdate_str):
+
+        # Dictionary to map the month abbreviations to month numbers
+        month_mapping = {
+            "JAN": 1, "FEV": 2, "FEB": 2, "MARS": 3, "MAAR": 3, "MÄR": 3,
+            "AVR": 4, "APR": 4, "MAI": 5, "MEI": 5, "JUIN": 6, "JUN": 6,
+            "JUIL": 7, "JUL": 7, "AOUT": 8, "AUG": 8, "SEPT": 9, "SEP": 9,
+            "OCT": 10, "OKT": 10, "NOV": 11, "DEC": 12, "DEZ": 12
+        }
+
+        # Extract day, month as string, and year
+        split_date = birthdate_str.split()
+        day = int(split_date[0])
+        month_str = split_date[1].upper()
+        year = int(split_date[2])
+
+        # Map the string month to a number
+        month = month_mapping.get(month_str, 0)
+        if month == 0:
+            raise ValueError("Invalid month abbreviation in birthdate string")
+
+        # Create a datetime object
+        birth_date = datetime.datetime(year, month, day)
+        timestamp = int(time.mktime(birth_date.timetuple()))
+        
+        return timestamp
+        
 
     ## Resets the current contact
     def _reset(self, files = None):

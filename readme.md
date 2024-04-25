@@ -73,8 +73,8 @@ Each eIDContact object consists of the following data:
 # Registre national (RN) data
 eID_contact.card_number
 eID_contact.chip_number
-eID_contact.card_validity_begin
-eID_contact.card_validity_end
+eID_contact.card_validity_begin # Data is unix timestamp
+eID_contact.card_validity_end # Data is unix timestamp
 eID_contact.card_delivery_municipality
 eID_contact.national_number
 eID_contact.name
@@ -82,8 +82,8 @@ eID_contact.two_first_given_names
 eID_contact.first_letter_of_third_name
 eID_contact.nationality
 eID_contact.birth_location
-eID_contact.birth_date
-eID_contact.sex
+eID_contact.birth_date # Data is unix timestamp
+eID_contact.sex # "M" or "F" -> simplified
 eID_contact.noble_condition
 eID_contact.document_type
 eID_contact.special_status
@@ -93,7 +93,7 @@ eID_contact.hash_photo
 eID_contact.street
 eID_contact.zip_code
 eID_contact.municipality
-eID_contact.country # Always returns België
+eID_contact.country # Always returns "België"
 
 # Photo data
 eID_contact.photo
