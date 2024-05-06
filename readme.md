@@ -55,10 +55,10 @@ eID.read_card() # Reads the entire card
 
 Like stated before, every read method will either return true or throw an exception. If the read method returned true, you can receive the data in 2 ways.
 
-Returning the data with the get_last_read_eID_contact method:
+Returning the data with the get_last_read method:
 
 ```python
-eID_contact = eID.get_last_read_eID_contact() # Returns last read eIDContact object
+eID_contact = eID.get_last_read() # Returns last read eIDContact object
 ```
 
 Returning all data by checking out the eID_contacts array:
@@ -85,8 +85,10 @@ eID_contact.birthplace
 eID_contact.birthdate # Data is unix timestamp
 eID_contact.sex # "M" or "F" -> simplified
 eID_contact.noble_condition
-eID_contact.document_type
-eID_contact.special_status
+eID_contact.document_type # "Belgian citizen" or "European community citizen" or "None European community citizen" or "Bootstrap card" or "Abilitation/machtigings card"
+eID_contact.white_cane # True or False
+eID_contact.yellow_cane # True or False
+eID_contact.extended_minority # True or False
 eID_contact.hash_photo
 
 # Address data

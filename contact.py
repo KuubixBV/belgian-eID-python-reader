@@ -21,7 +21,9 @@ class eIDContact:
     sex = ""
     noble_condition = ""
     document_type = ""
-    special_status = ""
+    white_cane = 0
+    yellow_cane = 0
+    extended_minority = 0
     hash_photo = ""
 
     # Address data
@@ -64,16 +66,27 @@ class eIDContact:
             if attribute_name == "sex":
                 value = "M" if value == "M" else "F"
 
-            # Check if the attribute exists in the class before setting it
-            if hasattr(self, attribute_name):
+            # Check for document_type
+            if attribute_name == "document_type":
+                value = self._document_type_to_string(value)
 
-                # Check if type is bytearray
-                if isinstance(value, (bytes, bytearray)):
-                    # Encode and decode to convert bytes to string for JSON serialization
-                    value = base64.encodebytes(value).decode('utf-8').strip()
-                setattr(self, attribute_name, value)
+            # Check for status code
+            if attribute_name == "special_status":
+                value = int(value)
+                self.white_cane = (value & 1) != 0
+                self.extended_minority = (value & 2) != 0
+                self.yellow_cane = (value & 4) != 0
             else:
-                raise Exception(f"Attribute '{attribute_name}' does not exist!")
+                # Check if the attribute exists in the class before setting it
+                if hasattr(self, attribute_name):
+
+                    # Check if type is bytearray
+                    if isinstance(value, (bytes, bytearray)):
+                        # Encode and decode to convert bytes to string for JSON serialization
+                        value = base64.encodebytes(value).decode('utf-8').strip()
+                    setattr(self, attribute_name, value)
+                else:
+                    raise Exception(f"Attribute '{attribute_name}' does not exist!")
 
         self.updated = datetime.datetime.now().timestamp()
 
@@ -88,6 +101,20 @@ class eIDContact:
         timestamp = int(time.mktime(date.timetuple()))
         
         return timestamp
+
+    ## Calculate document type as string
+    def _document_type_to_string(self, document_type):
+
+        # Dictionary to map
+        document_mapping = {
+            "1": "Belgian citizen",
+            "2": "European community citizen",
+            "3": "None European community citizen",
+            "7": "Bootstrap card",
+            "8": "Abilitation/machtigings card"
+        }
+
+        return document_mapping.get(document_type, 0)
 
     ## BirthDate convert to timestamp
     def _birthdate_to_timestamp(self, birthdate_str):
@@ -140,8 +167,10 @@ class eIDContact:
             self.sex = ""
             self.noble_condition = ""
             self.document_type = ""
-            self.special_status = ""
             self.hash_photo = ""
+            self.white_cane = 0
+            self.yellow_cane = 0
+            self.extended_minority = 0
     
         # Check if "ADDRESS" in files or None
         if "ADDRESS" in files or files == None:
@@ -152,7 +181,7 @@ class eIDContact:
             self.municipality = ""
 
         # Check if "PHOTO" in files or None
-        if "ADDRESS" in files or files == None:
+        if "PHOTO" in files or files == None:
 
             # Reset data for "PHOTO"
             self.photo = ""
@@ -168,4 +197,5 @@ class eIDContact:
     
     # Returns the current object as a DICT object
     def to_dict(self):
+        #return { "name": self.two_first_given_names, "updated": datetime.datetime.fromtimestamp(self.updated).strftime('%d/%m/%Y %H:%M:%S') }
         return {key: getattr(self, key) for key in dir(self) if not key.startswith('_') and not callable(getattr(self, key))}

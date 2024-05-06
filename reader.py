@@ -2,12 +2,15 @@ from smartcard.Exceptions import NoCardException
 from smartcard.util import toHexString
 from smartcard.System import readers
 from contact import eIDContact
+import time
+import json
 
 class eIDReader:
 
     # General used for class
     _reader = None
     _connection = None
+    _name = None
 
     # Read eID contacts
     eID_contacts = []
@@ -100,26 +103,64 @@ class eIDReader:
 
     # Validate object before creating
     def __new__(cls, name = ""):
-        if name != "":
-            reader = next((reader for reader in readers() if reader.name.lower().startswith(name.lower())), None)
+        obj = super().__new__(cls)
+        obj._name = name
+        obj._init_reader()
+        return obj
+
+    # Init the reader - this will create a new smartcard object
+    def _init_reader(self):
+
+        # Check what for reader should be looked for
+        if self._name != "":
+            reader = next((reader for reader in readers() if reader.name.lower().startswith(self._name.lower())), None)
             if not reader:
-                raise Exception(f"Could not find card reader. Please make sure a card reader that starts with '{name.lower()}' is plugged in. The following card readers are found:\n{readers()}")
+                raise Exception(f"Could not find card reader. Please make sure a card reader that starts with '{self._name.lower()}' is plugged in. The following card readers are found:\n{readers()}")
         else:
             if len(readers()) <= 0:
                 raise Exception("Could not find card reader.")
             reader = readers()[0]
+
+        # Disconnect current reader if a connection was made - a new card maybe inserted
+        if self._connection:
+            self._connection.disconnect()
         
-        obj = super().__new__(cls)
-        obj._reader = reader
-        obj._connection = reader.createConnection()
-        obj._connection.connect()
-        return obj
-    
+        # Init reader on object
+        self._reader = reader
+        self._connection = reader.createConnection()
+        self._connection.connect()
+
+    # Check if the card is responding to a select
+    def _select_and_validate(self, file = "RV", retry = 3):
+
+        # Check if retry counter is done!
+        if retry <= 0:
+            raise Exception(f"The eID card reader is not responding - or no card is inserted.")
+
+        # Try to select a file
+        try:
+            self._select(file)
+        except:
+
+            # Wait to try again
+            time.sleep(0.25)
+
+            # Reset the card - a new eID may has been inserted
+            self._init_reader()
+
+            # Read again
+            self._select_and_validate(file, retry - 1)
+        
+        return True
+
     # Methods
-    def get_last_read_eID_contact(self):
+    def get_last_read(self):
         if len(self.eID_contacts) <= 0:
             raise Exception(f"No eID contacts read yet - please read one first")
-        return self.eID_contacts[len(self.eID_contacts)-1]
+        
+        # Get last read contact based on updated timestamp
+        sorted_contacts = sorted(self.eID_contacts, key=lambda contact: contact.updated, reverse=True)
+        return sorted_contacts[0]
 
     ## Selects the correct file for reading - returns true for success - raises exception for error
     def _select(self, file="RN"):
@@ -166,7 +207,7 @@ class eIDReader:
             selected_data = {mapping["name"] for mapping in self._REGISTRE_NATIONAL_MAPPING.values()}
         else:
             self._check_selected_data(selected_data, self._REGISTRE_NATIONAL_MAPPING)
-        self._select("RN")
+        self._select_and_validate("RN")
 
         # Read selected file and create contact object
         response = self._read()
@@ -179,14 +220,14 @@ class eIDReader:
         # First get the card_number before we can continue
         if not self.read_registre_national([ "card number" ]) or len(self.eID_contacts) <= 0:
              raise Exception(f"Read failed - could not read card number - something went wrong")
-        card_number = self.eID_contacts[len(self.eID_contacts)-1].card_number
+        card_number = self.get_last_read().card_number
 
         # Check selected_data and fill if empty also, select RN file before reading chip
         if not selected_data or len(selected_data) <= 0:
             selected_data = {mapping["name"] for mapping in self._ADDRESS_MAPPING.values()}
         else:
             self._check_selected_data(selected_data, self._ADDRESS_MAPPING)
-        self._select("ADDRESS")
+        self._select_and_validate("ADDRESS")
 
         # Read selected file and create contact object
         response = self._read()
@@ -221,8 +262,8 @@ class eIDReader:
         # First get the card_number before we can continue
         if not self.read_registre_national([ "card number" ]) or len(self.eID_contacts) <= 0:
              raise Exception(f"Read failed - could not read card number - something went wrong")
-        card_number = self.eID_contacts[len(self.eID_contacts)-1].card_number
-        self._select("PHOTO")
+        card_number = self.get_last_read().card_number
+        self._select_and_validate("PHOTO")
 
         # Loop over file to retreive in 256 byte chunks
         photo = []
